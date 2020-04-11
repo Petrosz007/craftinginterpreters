@@ -6,22 +6,11 @@ namespace cslox
 {
     class Lox
     {
-        private static bool HadError { get; set; }
+        private static readonly Interpreter interpreter = new Interpreter();
+        private static bool HadError { get; set; } = false;
+        private static bool HadRuntimeError { get; set; } = false;
         static void Main(string[] args)
         {
-            Expr expression = new Expr.Binary(
-                new Expr.Unary(
-                    new Token(TokenType.MINUS, "-", null, 1),
-                    new Expr.Literal(123)
-                ),
-                new Token(TokenType.STAR, "*", null, 1),
-                new Expr.Grouping(
-                    new Expr.Literal(45.67)
-                )
-            );
-
-            Console.WriteLine(new AstPrinter().Print(expression));
-
             if(args.Length > 1)
             {
                 Console.WriteLine("Usage: cslox [script]");
@@ -46,6 +35,10 @@ namespace cslox
             {
                 Environment.Exit(65);
             }
+            if(HadRuntimeError)
+            {
+                Environment.Exit(70);
+            }
         }
 
         private static void RunPrompt()
@@ -65,9 +58,10 @@ namespace cslox
             Parser parser = new Parser(tokens);
             Expr expression = parser.Parse();
 
+            // Stop if there was a syntax error
             if(HadError) return;
 
-            Console.WriteLine(new AstPrinter().Print(expression));
+            interpreter.Interpret(expression);
         }
 
         public static void Error(int line, string message)
@@ -91,6 +85,12 @@ namespace cslox
             {
                 Report(token.Line, $"at '{token.Lexeme}'", message);
             }
+        }
+
+        public static void RuntimeError(Interpreter.RuntimeError error)
+        {
+            Console.Error.WriteLine($"{error.Message}\n[line {error.Token.Line}]");
+            HadRuntimeError = true;
         }
     }
 }

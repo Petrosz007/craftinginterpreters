@@ -28,48 +28,12 @@ namespace cslox
 
         private Expr Equality() =>
             ParseBinomExpr(Comparison, TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL);
-        // {
-        //     Expr expr = Comparison();
-
-        //     while(Match(TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL))
-        //     {
-        //         Token op = Previous();
-        //         Expr right = Comparison();
-        //         expr = new Expr.Binary(expr, op, right);
-        //     }
-
-        //     return expr;
-        // }
 
         private Expr Comparison() =>
             ParseBinomExpr(Addition, TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL);
-        // {
-        //     Expr expr = Addition();
-            
-        //     while(Match(TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL))
-        //     {
-        //         Token op = Previous();
-        //         Expr right = Addition();
-        //         expr = new Expr.Binary(expr, op, right);
-        //     }
-
-        //     return expr;
-        // }
 
         private Expr Addition() =>
             ParseBinomExpr(Multiplication, TokenType.MINUS, TokenType.PLUS);
-        // {
-        //     Expr expr = Multiplication();
-
-        //     while(Match(TokenType.MINUS, TokenType.PLUS))
-        //     {
-        //         Token operator = Previous();
-        //         Expr right = Multiplication();
-        //         expr = new Expr.Binary(expr, op, right);
-        //     }
-
-        //     return expr;
-        // }
 
         private Expr Multiplication() =>
             ParseBinomExpr(Unary, TokenType.SLASH, TokenType.STAR);
