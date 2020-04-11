@@ -1,36 +1,62 @@
-﻿using System.Collection.Generic;
+﻿// Auto generated with Tools/AstGenerator
+
+using System.Collections.Generic;
 
 namespace cslox {
 	public abstract class Expr {
-		public static class Binary : Expr {
-			public static readonly Expr Left { get; }
-			public static readonly Token Binop { get; }
-			public static readonly Expr Right { get; }
-			public static Binary(Expr left, Token binop, Expr right) {
+		public interface Visitor<R> {
+			R visitBinaryExpr(Binary expr);
+			R visitGroupingExpr(Grouping expr);
+			R visitLiteralExpr(Literal expr);
+			R visitUnaryExpr(Unary expr);
+		}
+		public class Binary : Expr {
+			public Expr Left { get; }
+			public Token Binop { get; }
+			public Expr Right { get; }
+			public Binary(Expr left, Token binop, Expr right) {
 				Left = left;
 				Binop = binop;
 				Right = right;
 			}
+
+			public override R accept<R>(Visitor<R> visitor) =>
+				visitor.visitBinaryExpr(this);
+			
 		}
-		public static class Grouping : Expr {
-			public static readonly Expr Expression { get; }
-			public static Grouping(Expr expression) {
+		public class Grouping : Expr {
+			public Expr Expression { get; }
+			public Grouping(Expr expression) {
 				Expression = expression;
 			}
+
+			public override R accept<R>(Visitor<R> visitor) =>
+				visitor.visitGroupingExpr(this);
+			
 		}
-		public static class Literal : Expr {
-			public static readonly Object Value { get; }
-			public static Literal(Object value) {
+		public class Literal : Expr {
+			public object Value { get; }
+			public Literal(object value) {
 				Value = value;
 			}
+
+			public override R accept<R>(Visitor<R> visitor) =>
+				visitor.visitLiteralExpr(this);
+			
 		}
-		public static class Unary : Expr {
-			public static readonly Token Op { get; }
-			public static readonly Expr Right { get; }
-			public static Unary(Token op, Expr right) {
+		public class Unary : Expr {
+			public Token Op { get; }
+			public Expr Right { get; }
+			public Unary(Token op, Expr right) {
 				Op = op;
 				Right = right;
 			}
+
+			public override R accept<R>(Visitor<R> visitor) =>
+				visitor.visitUnaryExpr(this);
+			
 		}
+
+		public abstract R accept<R>(Visitor<R> visitor);
 	}
 }

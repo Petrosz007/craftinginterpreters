@@ -31,7 +31,7 @@ namespace cslox.Tools.AstGenerator
             DefineAst(outputDir, "Expr", new List<string>{
                 "Binary   : Expr left, Token binop, Expr right",
                 "Grouping : Expr expression",
-                "Literal  : Object value",
+                "Literal  : object value",
                 "Unary    : Token op, Expr right"
             });
         }
@@ -42,10 +42,14 @@ namespace cslox.Tools.AstGenerator
 
             using StreamWriter writer = new StreamWriter(path, false, Encoding.UTF8);
             
-            writer.WriteLine("using System.Collection.Generic;");
+            writer.WriteLine("// Auto generated with Tools/AstGenerator");
+            writer.WriteLine("");
+            writer.WriteLine("using System.Collections.Generic;");
             writer.WriteLine("");
             writer.WriteLine("namespace cslox {");
             writer.WriteLine($"\tpublic abstract class {baseName} {{");
+
+            DefineVisitor(writer, baseName, types);
 
             foreach(var type in types)
             {
@@ -54,22 +58,38 @@ namespace cslox.Tools.AstGenerator
                 DefineType(writer, baseName, className, fields);
             }
 
+            writer.WriteLine("");
+            writer.WriteLine("\t\tpublic abstract R accept<R>(Visitor<R> visitor);");
+
             writer.WriteLine("\t}");
             writer.WriteLine("}");
         }
 
+        private static void DefineVisitor(StreamWriter writer, string baseName, List<string> types)
+        {
+            writer.WriteLine("\t\tpublic interface Visitor<R> {");
+
+            foreach(var type in types)
+            {
+                string typeName = type.Split(":")[0].Trim();
+                writer.WriteLine($"\t\t\tR visit{typeName}{baseName}({typeName} {baseName.ToLower()});");
+            }
+
+            writer.WriteLine("\t\t}");
+        }
+
         private static void DefineType(StreamWriter writer, string baseName, string className, string fieldList)
         {
-            writer.WriteLine($"\t\tpublic static class {className} : {baseName} {{");
+            writer.WriteLine($"\t\tpublic class {className} : {baseName} {{");
 
             var fields = fieldList.Split(", ");
             foreach(var field in fields)
             {
                 var split = field.Split(" ");
-                writer.WriteLine($"\t\t\tpublic static readonly {split[0]} {split[1].Capitalise()} {{ get; }}");
+                writer.WriteLine($"\t\t\tpublic {split[0]} {split[1].Capitalise()} {{ get; }}");
             }
 
-            writer.WriteLine($"\t\t\tpublic static {className}({fieldList}) {{");
+            writer.WriteLine($"\t\t\tpublic {className}({fieldList}) {{");
 
             foreach(var field in fields)
             {
@@ -78,6 +98,12 @@ namespace cslox.Tools.AstGenerator
             }
             
             writer.WriteLine("\t\t\t}");
+
+            writer.WriteLine("");
+            writer.WriteLine("\t\t\tpublic override R accept<R>(Visitor<R> visitor) =>");
+            writer.WriteLine($"\t\t\t\tvisitor.visit{className}{baseName}(this);");
+
+            writer.WriteLine("\t\t\t");
             writer.WriteLine("\t\t}");
         }
     }
