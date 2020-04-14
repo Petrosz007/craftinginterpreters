@@ -14,7 +14,7 @@ namespace cslox
             if(args.Length > 1)
             {
                 Console.WriteLine("Usage: cslox [script]");
-                Environment.Exit(64);
+                System.Environment.Exit(64);
             }
             else if(args.Length == 1)
             {
@@ -33,11 +33,11 @@ namespace cslox
 
             if(HadError)
             {
-                Environment.Exit(65);
+                System.Environment.Exit(65);
             }
             if(HadRuntimeError)
             {
-                Environment.Exit(70);
+                System.Environment.Exit(70);
             }
         }
 
@@ -56,12 +56,12 @@ namespace cslox
             Scanner scanner = new Scanner(source);
             List<Token> tokens = scanner.scanTokens();
             Parser parser = new Parser(tokens);
-            Expr expression = parser.Parse();
+            List<Stmt> statements = parser.Parse();
 
             // Stop if there was a syntax error
             if(HadError) return;
 
-            interpreter.Interpret(expression);
+            interpreter.Interpret(statements);
         }
 
         public static void Error(int line, string message)
@@ -87,7 +87,7 @@ namespace cslox
             }
         }
 
-        public static void RuntimeError(Interpreter.RuntimeError error)
+        public static void RuntimeError(RuntimeError error)
         {
             Console.Error.WriteLine($"{error.Message}\n[line {error.Token.Line}]");
             HadRuntimeError = true;

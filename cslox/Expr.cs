@@ -5,10 +5,24 @@ using System.Collections.Generic;
 namespace cslox {
 	public abstract class Expr {
 		public interface Visitor<R> {
+			R visitAssignExpr(Assign expr);
 			R visitBinaryExpr(Binary expr);
 			R visitGroupingExpr(Grouping expr);
 			R visitLiteralExpr(Literal expr);
 			R visitUnaryExpr(Unary expr);
+			R visitVariableExpr(Variable expr);
+		}
+		public class Assign : Expr {
+			public Token Name { get; }
+			public Expr Value { get; }
+			public Assign(Token name, Expr value) {
+				Name = name;
+				Value = value;
+			}
+
+			public override R accept<R>(Visitor<R> visitor) =>
+				visitor.visitAssignExpr(this);
+			
 		}
 		public class Binary : Expr {
 			public Expr Left { get; }
@@ -54,6 +68,16 @@ namespace cslox {
 
 			public override R accept<R>(Visitor<R> visitor) =>
 				visitor.visitUnaryExpr(this);
+			
+		}
+		public class Variable : Expr {
+			public Token Name { get; }
+			public Variable(Token name) {
+				Name = name;
+			}
+
+			public override R accept<R>(Visitor<R> visitor) =>
+				visitor.visitVariableExpr(this);
 			
 		}
 

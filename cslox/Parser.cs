@@ -13,18 +13,103 @@ namespace cslox
         public Parser(List<Token> tokens) =>
             (this.tokens, current) = (tokens, 0);
 
-        public Expr Parse()
+        public List<Stmt> Parse()
+        {
+            List<Stmt> statements = new List<Stmt>();
+
+            while(!IsAtEnd())
+            {
+                statements.Add(Declaration());
+            }
+
+            return statements;
+        }
+
+        private Stmt Declaration()
         {
             try {
-                return Expression();
+                if(Match(TokenType.VAR)) return VarDeclaration();
+
+                return Statement();
             }
-            catch(ParseError error) {
+            catch(ParseError error)
+            {
+                Synchronize();
                 return null;
             }
         }
 
+        private Stmt VarDeclaration()
+        {
+            Token name = Consume(TokenType.IDENTIFIER, "Expect variable name.");
+
+            Expr initialiser = null;
+            if(Match(TokenType.EQUAL))
+            {
+                initialiser = Expression();
+            }
+
+            Consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
+            return new Stmt.Var(name, initialiser);
+        }
+
+        private Stmt Statement() 
+        {
+            if(Match(TokenType.PRINT)) return PrintStatement();
+            if(Match(TokenType.LEFT_BRACE)) return new Stmt.Block(Block());
+
+            return ExpressionStatement();
+        }
+
+        private List<Stmt> Block()
+        {
+            List<Stmt> statements = new List<Stmt>();
+
+            while(!Check(TokenType.RIGHT_BRACE) && !IsAtEnd())
+            {
+                statements.Add(Declaration());
+            }
+
+            Consume(TokenType.RIGHT_BRACE, "Expect '}' after block.");
+            return statements;
+        }
+
+        private Stmt PrintStatement()
+        {
+            Expr value = Expression();
+            Consume(TokenType.SEMICOLON, "Expect ';' after value.");
+            return new Stmt.Print(value);
+        }
+
+        private Stmt ExpressionStatement()
+        {
+            Expr expr = Expression();
+            Consume(TokenType.SEMICOLON, "Expect ';' after expression.");
+            return new Stmt.Expression(expr);
+        }
+
         private Expr Expression() =>
-            Equality();
+            Assignment();
+
+        private Expr Assignment()
+        {
+            Expr expr = Equality();
+
+            if(Match(TokenType.EQUAL))
+            {
+                Token equals = Previous();
+                Expr value = Assignment();
+
+                if(expr is Expr.Variable variable)
+                {
+                    return new Expr.Assign(variable.Name, value);
+                }
+
+                Error(equals, "Invalid assignment target.");
+            }
+
+            return expr;
+        }
 
         private Expr Equality() =>
             ParseBinomExpr(Comparison, TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL);
@@ -75,6 +160,11 @@ namespace cslox
             if(Match(TokenType.NUMBER, TokenType.STRING))
             {
                 return new Expr.Literal(Previous().Literal);
+            }
+
+            if(Match(TokenType.IDENTIFIER))
+            {
+                return new Expr.Variable(Previous());
             }
 
             if(Match(TokenType.LEFT_PAREN))

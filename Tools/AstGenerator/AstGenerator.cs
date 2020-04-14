@@ -29,10 +29,19 @@ namespace cslox.Tools.AstGenerator
             string outputDir =  args[0];
 
             DefineAst(outputDir, "Expr", new List<string>{
+                "Assign   : Token name, Expr value",
                 "Binary   : Expr left, Token binop, Expr right",
                 "Grouping : Expr expression",
                 "Literal  : object value",
-                "Unary    : Token op, Expr right"
+                "Unary    : Token op, Expr right",
+                "Variable : Token name",
+            });
+
+            DefineAst(outputDir, "Stmt", new List<string>{
+                "Block      : List<Stmt> statements",
+                "Expression : Expr expr",
+                "Print      : Expr expr",
+                "Var        : Token name, Expr initializer",
             });
         }
 
