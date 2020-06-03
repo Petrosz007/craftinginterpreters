@@ -33,15 +33,18 @@ namespace cslox.Tools.AstGenerator
                 "Binary   : Expr left, Token binop, Expr right",
                 "Grouping : Expr expression",
                 "Literal  : object value",
+                "Logical  : Expr left, Token op, Expr right",
                 "Unary    : Token op, Expr right",
                 "Variable : Token name",
             });
 
             DefineAst(outputDir, "Stmt", new List<string>{
                 "Block      : List<Stmt> statements",
+                "If         : Expr condition, Stmt thenBranch, Stmt elseBranch",
                 "Expression : Expr expr",
                 "Print      : Expr expr",
                 "Var        : Token name, Expr initializer",
+                "While      : Expr condition, Stmt body",
             });
         }
 

@@ -6,9 +6,11 @@ namespace cslox {
 	public abstract class Stmt {
 		public interface Visitor<R> {
 			R visitBlockStmt(Block stmt);
+			R visitIfStmt(If stmt);
 			R visitExpressionStmt(Expression stmt);
 			R visitPrintStmt(Print stmt);
 			R visitVarStmt(Var stmt);
+			R visitWhileStmt(While stmt);
 		}
 		public class Block : Stmt {
 			public List<Stmt> Statements { get; }
@@ -18,6 +20,20 @@ namespace cslox {
 
 			public override R accept<R>(Visitor<R> visitor) =>
 				visitor.visitBlockStmt(this);
+			
+		}
+		public class If : Stmt {
+			public Expr Condition { get; }
+			public Stmt ThenBranch { get; }
+			public Stmt ElseBranch { get; }
+			public If(Expr condition, Stmt thenBranch, Stmt elseBranch) {
+				Condition = condition;
+				ThenBranch = thenBranch;
+				ElseBranch = elseBranch;
+			}
+
+			public override R accept<R>(Visitor<R> visitor) =>
+				visitor.visitIfStmt(this);
 			
 		}
 		public class Expression : Stmt {
@@ -50,6 +66,18 @@ namespace cslox {
 
 			public override R accept<R>(Visitor<R> visitor) =>
 				visitor.visitVarStmt(this);
+			
+		}
+		public class While : Stmt {
+			public Expr Condition { get; }
+			public Stmt Body { get; }
+			public While(Expr condition, Stmt body) {
+				Condition = condition;
+				Body = body;
+			}
+
+			public override R accept<R>(Visitor<R> visitor) =>
+				visitor.visitWhileStmt(this);
 			
 		}
 

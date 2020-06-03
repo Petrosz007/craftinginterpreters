@@ -55,6 +55,22 @@ namespace cslox
         public object visitLiteralExpr(Expr.Literal expr) =>
             expr.Value;
 
+        public object visitLogicalExpr(Expr.Logical expr)
+        {
+            object left = Evaluate(expr.Left);
+
+            if(expr.Op.Type == TokenType.OR)
+            {
+                if(IsTruthy(left)) return left;
+            }
+            else
+            {
+                if(!IsTruthy(left)) return left;
+            }
+
+            return Evaluate(expr.Right);
+        }
+
         public object visitGroupingExpr(Expr.Grouping expr) =>
             Evaluate(expr.Expression);
         private object Evaluate(Expr expr) =>
@@ -70,7 +86,7 @@ namespace cslox
                     return - (double) right;
 
                 case TokenType.BANG:
-                    return !IsThruthy(right);
+                    return !IsTruthy(right);
             }
 
             return null;
@@ -90,7 +106,7 @@ namespace cslox
             throw new RuntimeError(op, "Operands must be a numbers.");
         }
 
-        private bool IsThruthy(object obj)
+        private bool IsTruthy(object obj)
         {
             if(obj == null) return false;
 
@@ -170,6 +186,20 @@ namespace cslox
             return null;
         }
 
+        public NoValue visitIfStmt(Stmt.If stmt)
+        {
+            if(IsTruthy(Evaluate(stmt.Condition)))
+            {
+                Execute(stmt.ThenBranch);
+            }
+            else if(stmt.ElseBranch != null)
+            {
+                Execute(stmt.ElseBranch);
+            }
+
+            return null;
+        }
+
         public NoValue visitPrintStmt(Stmt.Print stmt)
         {
             object value = Evaluate(stmt.Expr);
@@ -186,6 +216,16 @@ namespace cslox
             }
 
             environment.Define(stmt.Name.Lexeme, value);
+            return null;
+        }
+
+        public NoValue visitWhileStmt(Stmt.While stmt)
+        {
+            while(IsTruthy(Evaluate(stmt.Condition)))
+            {
+                Execute(stmt.Body);
+            }
+
             return null;
         }
 

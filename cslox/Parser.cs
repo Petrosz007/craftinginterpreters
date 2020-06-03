@@ -53,12 +53,97 @@ namespace cslox
             return new Stmt.Var(name, initialiser);
         }
 
+        private Stmt WhileStatement()
+        {
+            Consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.");
+            Expr condition = Expression();
+            Consume(TokenType.RIGHT_PAREN, "Expect ')' after 'while'.");
+            Stmt body = Statement();
+
+            return new Stmt.While(condition, body);
+        }
+
         private Stmt Statement() 
         {
+            if(Match(TokenType.FOR)) return ForStatement();
+            if(Match(TokenType.IF)) return IfStatement();
             if(Match(TokenType.PRINT)) return PrintStatement();
+            if(Match(TokenType.WHILE)) return WhileStatement();
             if(Match(TokenType.LEFT_BRACE)) return new Stmt.Block(Block());
 
             return ExpressionStatement();
+        }
+
+        private Stmt ForStatement()
+        {
+            Consume(TokenType.LEFT_PAREN, "Expect 'c' after 'for'.");
+
+            Stmt initialiser = null;
+            if(Match(TokenType.SEMICOLON))
+            {
+                initialiser = null;
+            }
+            else if(Match(TokenType.VAR))
+            {
+                initialiser = VarDeclaration();
+            }
+            else
+            {
+                initialiser = ExpressionStatement();
+            }
+
+            Expr condition = null;
+            if(!Check(TokenType.SEMICOLON))
+            {
+                condition = Expression();
+            }
+            Consume(TokenType.SEMICOLON, "Expect ';' after loop condition.");
+
+            Expr increment = null;
+            if(!Check(TokenType.SEMICOLON))
+            {
+                condition = Expression();
+            }
+            Consume(TokenType.RIGHT_PAREN, "Expect ')' after for clauses.");
+
+            Stmt body = Statement();
+
+            if(increment != null)
+            {
+                body = new Stmt.Block(new List<Stmt>{
+                    body,
+                    new Stmt.Expression(increment),
+                });
+            }
+
+            condition ??= new Expr.Literal(true);
+            body = new Stmt.While(condition, body);
+
+            if(initialiser != null)
+            {
+                body = new Stmt.Block(new List<Stmt>{
+                    initialiser,
+                    body,
+                });
+            }
+
+            return body;
+        }
+
+        private Stmt IfStatement()
+        {
+            Consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.");
+            Expr condition = Expression();
+            Consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition.");
+
+            Stmt thanBranch = Statement();
+            Stmt elseBranch = null;
+            if(Match(TokenType.ELSE))
+            {
+                elseBranch = Statement();
+            }
+
+            return new Stmt.If(condition, thanBranch, elseBranch);
         }
 
         private List<Stmt> Block()
@@ -93,7 +178,7 @@ namespace cslox
 
         private Expr Assignment()
         {
-            Expr expr = Equality();
+            Expr expr = Or();
 
             if(Match(TokenType.EQUAL))
             {
@@ -111,6 +196,12 @@ namespace cslox
             return expr;
         }
 
+        private Expr Or() =>
+            ParseLogicalExpr(And, TokenType.OR);
+
+        private Expr And() =>
+            ParseLogicalExpr(Equality, TokenType.AND);
+
         private Expr Equality() =>
             ParseBinomExpr(Comparison, TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL);
 
@@ -124,6 +215,20 @@ namespace cslox
             ParseBinomExpr(Unary, TokenType.SLASH, TokenType.STAR);
 
         private delegate Expr BinopExpr();
+
+        private Expr ParseLogicalExpr(BinopExpr f, params TokenType[] tokens)
+        {
+            Expr expr = f();
+
+            while(Match(tokens))
+            {
+                Token op = Previous();
+                Expr right = f();
+                expr = new Expr.Logical(expr, op, right);
+            }
+
+            return expr;
+        }
 
         private Expr ParseBinomExpr(BinopExpr f, params TokenType[] tokens)
         {
