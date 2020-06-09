@@ -28,15 +28,39 @@ namespace cslox
         private Stmt Declaration()
         {
             try {
+                if(Match(TokenType.FUN)) return Function("function");
                 if(Match(TokenType.VAR)) return VarDeclaration();
 
                 return Statement();
             }
-            catch(ParseError error)
+            catch(ParseError)
             {
                 Synchronize();
                 return null;
             }
+        }
+
+        private Stmt Function(string kind)
+        {
+            Token name = Consume(TokenType.IDENTIFIER, $"Expect {kind} name.");
+
+            Consume(TokenType.LEFT_PAREN, $"Expect '(' after {kind} name.");
+            var parameters = new List<Token>();
+
+            if(!Check(TokenType.RIGHT_PAREN))
+                do {
+                    if(parameters.Count >= 255)
+                        Error(Peek(), "Cannot have more than 255 parameters.");
+                    
+                    parameters.Add(Consume(TokenType.IDENTIFIER, "Expect parameter name."));
+                } while(Match(TokenType.COMMA));
+
+            Consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.");
+
+            Consume(TokenType.LEFT_BRACE, $"Expect '{{' before {kind} body.");
+            List<Stmt> body = Block();
+
+            return new Stmt.Function(name, parameters, body);
         }
 
         private Stmt VarDeclaration()
@@ -68,6 +92,7 @@ namespace cslox
             if(Match(TokenType.FOR)) return ForStatement();
             if(Match(TokenType.IF)) return IfStatement();
             if(Match(TokenType.PRINT)) return PrintStatement();
+            if(Match(TokenType.RETURN)) return ReturnStatement();
             if(Match(TokenType.WHILE)) return WhileStatement();
             if(Match(TokenType.LEFT_BRACE)) return new Stmt.Block(Block());
 
@@ -100,9 +125,9 @@ namespace cslox
             Consume(TokenType.SEMICOLON, "Expect ';' after loop condition.");
 
             Expr increment = null;
-            if(!Check(TokenType.SEMICOLON))
+            if(!Check(TokenType.RIGHT_PAREN))
             {
-                condition = Expression();
+                increment = Expression();
             }
             Consume(TokenType.RIGHT_PAREN, "Expect ')' after for clauses.");
 
@@ -164,6 +189,17 @@ namespace cslox
             Expr value = Expression();
             Consume(TokenType.SEMICOLON, "Expect ';' after value.");
             return new Stmt.Print(value);
+        }
+
+        private Stmt ReturnStatement()
+        {
+            Token keyword = Previous();
+            Expr value = null;
+            if(!Check(TokenType.SEMICOLON))
+                value = Expression();
+
+            Consume(TokenType.SEMICOLON, "Expect ';' after return value.");
+            return new Stmt.Return(keyword, value);
         }
 
         private Stmt ExpressionStatement()
@@ -253,7 +289,39 @@ namespace cslox
                 return new Expr.Unary(op, right);
             }
 
-            return Primary();
+            return Call();
+        }
+
+        private Expr Call()
+        {
+            Expr expr = Primary();
+
+            while(true)
+            {
+                if(Match(TokenType.LEFT_PAREN))
+                    expr = FinishCall(expr);
+                else
+                    break;
+            }
+
+            return expr;
+        }
+
+        private Expr FinishCall(Expr callee)
+        {
+            var arguments = new List<Expr>();
+
+            if(!Check(TokenType.RIGHT_PAREN))
+                do {
+                    if(arguments.Count >= 255)
+                        Error(Peek(), "Cannot have more than 255 arguments.");
+
+                    arguments.Add(Expression());
+                } while(Match(TokenType.COMMA));
+
+            Token paren = Consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.");
+
+            return new Expr.Call(callee, paren, arguments);
         }
 
         private Expr Primary()

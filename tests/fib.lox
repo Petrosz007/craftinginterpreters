@@ -1,0 +1,22 @@
+fun fibonacci(n) {
+    if(n <= 1) return n;
+
+    return fibonacci(n - 2) + fibonacci(n - 1);
+}
+
+var j = 0;
+while(j <= 20) {
+    print j; 
+    print ". fibonacci number is: ";
+    print fibonacci(j);
+    print "\n\n";
+    j = j + 1;
+}
+
+for(var i = 0; i <= 20; i = i + 1) {
+    print i; 
+    print ". fibonacci number is: ";
+    print fibonacci(i);
+    print "\n\n";
+}
+

@@ -31,6 +31,7 @@ namespace cslox.Tools.AstGenerator
             DefineAst(outputDir, "Expr", new List<string>{
                 "Assign   : Token name, Expr value",
                 "Binary   : Expr left, Token binop, Expr right",
+                "Call     : Expr callee, Token paren, List<Expr> arguments",
                 "Grouping : Expr expression",
                 "Literal  : object value",
                 "Logical  : Expr left, Token op, Expr right",
@@ -42,7 +43,9 @@ namespace cslox.Tools.AstGenerator
                 "Block      : List<Stmt> statements",
                 "If         : Expr condition, Stmt thenBranch, Stmt elseBranch",
                 "Expression : Expr expr",
+                "Function   : Token name, List<Token> parameters, List<Stmt> body",
                 "Print      : Expr expr",
+                "Return     : Token keyword, Expr value",
                 "Var        : Token name, Expr initializer",
                 "While      : Expr condition, Stmt body",
             });

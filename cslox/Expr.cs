@@ -7,6 +7,7 @@ namespace cslox {
 		public interface Visitor<R> {
 			R visitAssignExpr(Assign expr);
 			R visitBinaryExpr(Binary expr);
+			R visitCallExpr(Call expr);
 			R visitGroupingExpr(Grouping expr);
 			R visitLiteralExpr(Literal expr);
 			R visitLogicalExpr(Logical expr);
@@ -37,6 +38,20 @@ namespace cslox {
 
 			public override R accept<R>(Visitor<R> visitor) =>
 				visitor.visitBinaryExpr(this);
+			
+		}
+		public class Call : Expr {
+			public Expr Callee { get; }
+			public Token Paren { get; }
+			public List<Expr> Arguments { get; }
+			public Call(Expr callee, Token paren, List<Expr> arguments) {
+				Callee = callee;
+				Paren = paren;
+				Arguments = arguments;
+			}
+
+			public override R accept<R>(Visitor<R> visitor) =>
+				visitor.visitCallExpr(this);
 			
 		}
 		public class Grouping : Expr {

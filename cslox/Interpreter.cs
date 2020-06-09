@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,11 +13,27 @@ namespace cslox
             : base(message) => 
             Token = token;
     }
+
+    public class Return : Exception
+    {
+        public object Value { get; }
+        public Return(object value) : base() =>
+            Value = value;
+    }
+
     public class Interpreter : Expr.Visitor<object>, Stmt.Visitor<NoValue>
     {
+        internal Environment globals = new Environment();
         private Environment environment;
-        public Interpreter() =>
-            environment = new Environment();
+        public Interpreter()
+        {
+            globals.Define("clock", new LoxPrimitive {
+                Arity = 0,
+                Call = (Interpreter x, List<object> y) => DateTime.Now.Ticks / TimeSpan.TicksPerSecond,
+            });
+
+            environment = globals;
+        }
         public void Interpret(List<Stmt> statements)
         {
             try {
@@ -172,6 +190,21 @@ namespace cslox
             return null;
         }
 
+        public object visitCallExpr(Expr.Call expr)
+        {
+            object callee = Evaluate(expr.Callee);
+
+            var arguments = expr.Arguments.Select(arg => Evaluate(arg)).ToList();
+
+            if(!(callee is LoxCallable function))
+                throw new RuntimeError(expr.Paren, "Can only call functions and classes.");
+
+            if(arguments.Count != function.Arity)
+                throw new RuntimeError(expr.Paren, $"Expected {function.Arity} arguments but got {arguments.Count}.");
+
+            return function.Call(this, arguments); 
+        }
+
         private bool IsEqual(object a, object b)
         {
             if(a == null && b == null) return true;
@@ -183,6 +216,13 @@ namespace cslox
         public NoValue visitExpressionStmt(Stmt.Expression stmt)
         {
             Evaluate(stmt.Expr);
+            return null;
+        }
+
+        public NoValue visitFunctionStmt(Stmt.Function stmt)
+        {
+            var function = new LoxFunction(stmt, environment);
+            environment.Define(stmt.Name.Lexeme, function);
             return null;
         }
 
@@ -205,6 +245,15 @@ namespace cslox
             object value = Evaluate(stmt.Expr);
             Console.WriteLine(Stringify(value));
             return null;
+        }
+
+        public NoValue visitReturnStmt(Stmt.Return stmt)
+        {
+            object value = null;
+            if(stmt.Value != null)
+                value = Evaluate(stmt.Value);
+
+            throw new Return(value);
         }
 
         public NoValue visitVarStmt(Stmt.Var stmt)
@@ -246,7 +295,7 @@ namespace cslox
             return null;
         }
 
-        private void ExecuteBlock(List<Stmt> statements, Environment environment)
+        internal void ExecuteBlock(List<Stmt> statements, Environment environment)
         {
             Environment previous = this.environment;
 
