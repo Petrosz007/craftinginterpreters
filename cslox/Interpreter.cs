@@ -25,6 +25,7 @@ namespace cslox
     {
         internal Environment globals = new Environment();
         private Environment environment;
+        private Dictionary<Expr, int> locals = new Dictionary<Expr, int>();
         public Interpreter()
         {
             globals.Define("clock", new LoxPrimitive {
@@ -52,6 +53,9 @@ namespace cslox
         {
             stmt.accept(this);
         }
+
+        internal void Resolve(Expr expr, int depth) =>
+            locals[expr] = depth;
 
         private string Stringify(object obj)
         {
@@ -282,12 +286,24 @@ namespace cslox
         {
             object value = Evaluate(expr.Value);
 
-            environment.Assign(expr.Name, value);
+            if(locals.TryGetValue(expr, out int distance))
+                environment.AssignAt(distance, expr.Name.Lexeme, value);
+            else
+                globals.Assign(expr.Name, value);
+
             return value;
         }
 
         public object visitVariableExpr(Expr.Variable expr) =>
-            environment.Get(expr.Name);
+            LookUpVariable(expr.Name, expr);
+
+        private object LookUpVariable(Token name, Expr expr)
+        {
+            if(locals.TryGetValue(expr, out int distance))
+                return environment.GetAt(distance, name.Lexeme);
+            else
+                return globals.Get(name);
+        }
 
         public NoValue visitBlockStmt(Stmt.Block stmt)
         {

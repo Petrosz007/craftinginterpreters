@@ -15,6 +15,21 @@ namespace cslox
         public void Define(string name, object value) =>
             values[name] = value;
 
+        private Environment Ancestor(int distance)
+        {
+            var environment = this;
+            for(int i = 0; i < distance; ++i)
+                environment = environment.enclosing;
+
+            return environment;
+        }
+
+        public object GetAt(int distance, string name) =>
+            Ancestor(distance).values[name];
+        
+        public void AssignAt(int distance, string name, object value) =>
+            Ancestor(distance).values[name] = value;
+
         public void Assign(Token name, object value)
         {
             if(values.ContainsKey(name.Lexeme))
