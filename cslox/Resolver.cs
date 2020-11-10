@@ -94,6 +94,13 @@ namespace cslox
             return null;
         }
 
+        public NoValue visitClassStmt(Stmt.Class stmt)
+        {
+            Declare(stmt.Name);
+            Define(stmt.Name);
+            return null;
+        }
+
         public NoValue visitExpressionStmt(Stmt.Expression stmt)
         {
             Resolve(stmt.Expr);
@@ -181,6 +188,12 @@ namespace cslox
             return null;
         }
 
+        public NoValue visitGetExpr(Expr.Get expr)
+        {
+            Resolve(expr.Obj);
+            return null;
+        }
+
         public NoValue visitGroupingExpr(Expr.Grouping expr)
         {
             Resolve(expr.Expression);
@@ -193,6 +206,13 @@ namespace cslox
         {
             Resolve(expr.Left);
             Resolve(expr.Right);
+            return null;
+        }
+
+        public NoValue visitSetExpr(Expr.Set expr)
+        {
+            Resolve(expr.Value);
+            Resolve(expr.Obj);
             return null;
         }
 

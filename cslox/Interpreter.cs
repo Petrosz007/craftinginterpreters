@@ -93,6 +93,18 @@ namespace cslox
             return Evaluate(expr.Right);
         }
 
+        public object visitSetExpr(Expr.Set expr)
+        {
+            object obj = Evaluate(expr.Obj);
+
+            if(!(obj is LoxInstance))
+                throw new RuntimeError(expr.Name, "Only instances have fields.");
+
+            object value = Evaluate(expr.Value);
+            ((LoxInstance)obj).Set(expr.Name, expr.Value);
+            return value;
+        }
+
         public object visitGroupingExpr(Expr.Grouping expr) =>
             Evaluate(expr.Expression);
         private object Evaluate(Expr expr) =>
@@ -207,6 +219,16 @@ namespace cslox
                 throw new RuntimeError(expr.Paren, $"Expected {function.Arity} arguments but got {arguments.Count}.");
 
             return function.Call(this, arguments); 
+        }
+
+        public object visitGetExpr(Expr.Get expr)
+        {
+            object obj = Evaluate(expr.Obj);
+
+            if(obj is LoxInstance instance)
+                return instance.Get(expr.Name);
+
+            throw new RuntimeError(expr.Name, "Only instances have properties.");
         }
 
         private bool IsEqual(object a, object b)
@@ -327,6 +349,15 @@ namespace cslox
             {
                 this.environment = previous;
             }
+        }
+
+        public NoValue visitClassStmt(Stmt.Class stmt)
+        {
+            environment.Define(stmt.Name.Lexeme, null);
+            var klass = new LoxClass(stmt.Name.Lexeme);
+            environment.Assign(stmt.Name, klass);
+
+            return null;
         }
     }
 }

@@ -8,9 +8,11 @@ namespace cslox {
 			R visitAssignExpr(Assign expr);
 			R visitBinaryExpr(Binary expr);
 			R visitCallExpr(Call expr);
+			R visitGetExpr(Get expr);
 			R visitGroupingExpr(Grouping expr);
 			R visitLiteralExpr(Literal expr);
 			R visitLogicalExpr(Logical expr);
+			R visitSetExpr(Set expr);
 			R visitUnaryExpr(Unary expr);
 			R visitVariableExpr(Variable expr);
 		}
@@ -54,6 +56,18 @@ namespace cslox {
 				visitor.visitCallExpr(this);
 			
 		}
+		public class Get : Expr {
+			public Expr Obj { get; }
+			public Token Name { get; }
+			public Get(Expr obj, Token name) {
+				Obj = obj;
+				Name = name;
+			}
+
+			public override R accept<R>(Visitor<R> visitor) =>
+				visitor.visitGetExpr(this);
+			
+		}
 		public class Grouping : Expr {
 			public Expr Expression { get; }
 			public Grouping(Expr expression) {
@@ -86,6 +100,20 @@ namespace cslox {
 
 			public override R accept<R>(Visitor<R> visitor) =>
 				visitor.visitLogicalExpr(this);
+			
+		}
+		public class Set : Expr {
+			public Expr Obj { get; }
+			public Token Name { get; }
+			public Expr Value { get; }
+			public Set(Expr obj, Token name, Expr value) {
+				Obj = obj;
+				Name = name;
+				Value = value;
+			}
+
+			public override R accept<R>(Visitor<R> visitor) =>
+				visitor.visitSetExpr(this);
 			
 		}
 		public class Unary : Expr {

@@ -6,6 +6,7 @@ namespace cslox {
 	public abstract class Stmt {
 		public interface Visitor<R> {
 			R visitBlockStmt(Block stmt);
+			R visitClassStmt(Class stmt);
 			R visitIfStmt(If stmt);
 			R visitExpressionStmt(Expression stmt);
 			R visitFunctionStmt(Function stmt);
@@ -22,6 +23,18 @@ namespace cslox {
 
 			public override R accept<R>(Visitor<R> visitor) =>
 				visitor.visitBlockStmt(this);
+			
+		}
+		public class Class : Stmt {
+			public Token Name { get; }
+			public List<Stmt.Function> Methods { get; }
+			public Class(Token name, List<Stmt.Function> methods) {
+				Name = name;
+				Methods = methods;
+			}
+
+			public override R accept<R>(Visitor<R> visitor) =>
+				visitor.visitClassStmt(this);
 			
 		}
 		public class If : Stmt {

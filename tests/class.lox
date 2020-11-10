@@ -1,0 +1,9 @@
+class Bagel {}
+
+var bagel = Bagel();
+
+bagel.good = true;
+print bagel.good;
+
+bagel.good = "Yes";
+print bagel.good;

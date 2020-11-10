@@ -28,6 +28,7 @@ namespace cslox
         private Stmt Declaration()
         {
             try {
+                if(Match(TokenType.CLASS)) return ClassDeclaration();
                 if(Match(TokenType.FUN)) return Function("function");
                 if(Match(TokenType.VAR)) return VarDeclaration();
 
@@ -38,6 +39,22 @@ namespace cslox
                 Synchronize();
                 return null;
             }
+        }
+
+        private Stmt ClassDeclaration()
+        {
+            Token name = Consume(TokenType.IDENTIFIER, "Expect class name.");
+            Consume(TokenType.LEFT_BRACE, "Expect '{' before class body.");
+
+            var methods = new List<Stmt.Function>();
+            while(!Check(TokenType.RIGHT_BRACE) && !IsAtEnd())
+            {
+                methods.Add((Stmt.Function) Function("method"));
+            }
+
+            Consume(TokenType.RIGHT_BRACE, "Expect '}' after class body.");
+
+            return new Stmt.Class(name, methods);
         }
 
         private Stmt Function(string kind)
@@ -225,6 +242,10 @@ namespace cslox
                 {
                     return new Expr.Assign(variable.Name, value);
                 }
+                else if(expr is Expr.Get get)
+                {
+                    return new Expr.Set(get.Obj, get.Name, value);
+                }
 
                 Error(equals, "Invalid assignment target.");
             }
@@ -300,6 +321,11 @@ namespace cslox
             {
                 if(Match(TokenType.LEFT_PAREN))
                     expr = FinishCall(expr);
+                else if(Match(TokenType.DOT))
+                {
+                    Token name = Consume(TokenType.IDENTIFIER, "Expect property name after '.'.");
+                    expr = new Expr.Get(expr, name);
+                }
                 else
                     break;
             }
