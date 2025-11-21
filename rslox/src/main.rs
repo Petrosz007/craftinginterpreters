@@ -1,60 +1,27 @@
-use std::{env, fs};
-use std::io::{stdin, stdout, Write};
-use std::process::exit;
-
-use crate::vm::{InterpretResult, VM};
+use crate::{
+    chunk::{Chunk, OpCode},
+    disassembler::disassemble_chunk,
+    vm::VM,
+};
 
 mod chunk;
-mod compiler;
-mod scanner;
+mod disassembler;
 mod value;
 mod vm;
 
-fn repl() {
-    let mut line = String::new();
-    loop {
-        print!("> ");
-        stdout().flush();
-
-        line.clear();
-        let bytes_read = stdin().read_line(&mut line).expect("can read from stdin");
-
-        if bytes_read == 0 {
-            println!();
-            break;
-        }
-
-        VM::interpret(line.clone());
-    }
-}
-
-fn runFile(file_path: &str) {
-    match fs::read_to_string(file_path) {
-        Ok(source) => {
-            let result = VM::interpret(source);
-
-            match result {
-                InterpretResult::CompileError => exit(65),
-                InterpretResult::RuntimeError => exit(70),
-                _ => {}
-            };
-        }
-        Err(err) => {
-            eprintln!("Cannot open source file on path '{file_path}': {err}");
-            exit(74);
-        }
-    }
-}
-
 fn main() {
-    let args = env::args().collect::<Vec<_>>();
+    let mut vm = VM::new();
 
-    match args.as_slice() {
-        [_executable] => repl(),
-        [_executable, file] => runFile(file),
-        _ => {
-            eprintln!("Usage: rslox [path]");
-            exit(64);
-        }
-    }
+    let mut chunk = Chunk::new();
+    chunk.write_constant(1.2, 123);
+    chunk.write_constant(3.4, 123);
+    chunk.write(OpCode::Add.into(), 123);
+    chunk.write_constant(5.6, 123);
+    chunk.write(OpCode::Divide.into(), 123);
+    chunk.write(OpCode::Negate.into(), 123);
+    chunk.write(OpCode::Return.into(), 123);
+
+    disassemble_chunk(&chunk, "test chunk");
+
+    vm.interpret(chunk);
 }

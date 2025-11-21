@@ -1,14 +1,12 @@
 [package]
 name = "rslox"
 version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-contracts = "0.6.3"
-anyhow = "1.0"
-thiserror = "1.0"
+edition = "2024"
 
 [features]
-debug_trace = []
+debug_trace_execution = []
+
+[dependencies]
+clap = { version = "4.5.53", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
