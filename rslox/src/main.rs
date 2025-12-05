@@ -1,27 +1,66 @@
-use crate::{
-    chunk::{Chunk, OpCode},
-    disassembler::disassemble_chunk,
-    vm::VM,
-};
+use std::{fs, io, process::exit};
+
+use clap::Parser;
+
+use crate::vm::VM;
 
 mod chunk;
+mod compiler;
 mod disassembler;
+mod scanner;
+mod utils;
 mod value;
 mod vm;
 
+#[derive(clap::Parser)]
+struct Cli {
+    /// File to run
+    file: Option<String>,
+}
+
 fn main() {
-    let mut vm = VM::new();
+    let cli = Cli::parse();
 
-    let mut chunk = Chunk::new();
-    chunk.write_constant(1.2, 123);
-    chunk.write_constant(3.4, 123);
-    chunk.write(OpCode::Add.into(), 123);
-    chunk.write_constant(5.6, 123);
-    chunk.write(OpCode::Divide.into(), 123);
-    chunk.write(OpCode::Negate.into(), 123);
-    chunk.write(OpCode::Return.into(), 123);
+    let vm = VM::new();
 
-    disassemble_chunk(&chunk, "test chunk");
+    if let Some(file_path) = cli.file {
+        run_file(vm, &file_path);
+    }
 
-    vm.interpret(chunk);
+    repl(vm)
+}
+
+fn repl(vm: VM) {
+    let mut line = String::new();
+    let stdin = io::stdin();
+
+    loop {
+        print!("> ");
+        stdin.read_line(&mut line).unwrap();
+        println!();
+
+        interpret(&line);
+    }
+}
+
+fn run_file(vm: VM, file_path: &str) -> ! {
+    let source = match fs::read_to_string(file_path) {
+        Ok(source) => source,
+        Err(err) => {
+            eprintln!("Could not open file {file_path}: {err}");
+            exit(74);
+        }
+    };
+    let result = interpret(&source);
+
+    match result {
+        vm::InterpretResult::Ok => exit(0),
+        vm::InterpretResult::CompileError => exit(65),
+        vm::InterpretResult::RuntimeError => exit(70),
+    }
+}
+
+fn interpret(source: &str) -> vm::InterpretResult {
+    compiler::compile(source);
+    vm::InterpretResult::Ok
 }
