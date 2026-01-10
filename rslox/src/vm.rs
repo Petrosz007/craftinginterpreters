@@ -1,21 +1,23 @@
-use std::ops::Range;
+use std::{ops::Range, pin::Pin, ptr};
 
 use crate::{
     chunk::{Chunk, OP},
+    compiler,
     disassembler::disassemble_instruction,
     value::{Value, print_value},
 };
 
+// const STACK_MAX: usize = 256;
 const STACK_MAX: usize = 256;
 
 pub struct VM {
-    chunk: Chunk,
+    chunk: Pin<Box<Chunk>>,
     ip: *const u8,
     ip_range: Range<*const u8>,
 
     // TODO: I think I need to store the underlying struct here for the pointers to work
     #[allow(unused)]
-    stack: [Value; STACK_MAX],
+    stack: Pin<Box<[Value; STACK_MAX]>>,
     stack_top: *mut Value,
     stack_ptr_range: Range<*mut Value>,
 }
@@ -30,32 +32,44 @@ pub enum InterpretResult {
 
 impl VM {
     pub fn new() -> VM {
-        let chunk = Chunk::default();
-        let ip = chunk.code.as_ptr();
-        let ip_range = chunk.code.as_ptr_range();
-        let mut stack = [0.0; STACK_MAX];
+        let mut vm = VM {
+            chunk: Box::pin(Chunk::new()),
+            ip: ptr::null(),
+            ip_range: Range::default(),
+            stack: Box::pin([0.0; STACK_MAX]),
+            stack_top: ptr::null_mut(),
+            stack_ptr_range: Range::default(),
+        };
 
-        VM {
-            chunk,
-            ip,
-            ip_range,
-            stack,
-            stack_top: stack.as_mut_ptr(),
-            stack_ptr_range: stack.as_mut_ptr_range(),
-        }
+        vm.ip = vm.chunk.code.as_ptr();
+        vm.ip_range = vm.chunk.code.as_ptr_range();
+        vm.stack_top = vm.stack.as_mut_ptr();
+        vm.stack_ptr_range = vm.stack.as_mut_ptr_range();
+
+        vm
     }
 
-    pub fn interpret(&mut self, chunk: Chunk) -> InterpretResult {
-        self.chunk = chunk;
+    pub fn interpret(&mut self, source: &str) -> InterpretResult {
+        let chunk = match compiler::Compiler::compile(source) {
+            Ok(chunk) => chunk,
+            Err(_) => return InterpretResult::CompileError,
+        };
+
+        dbg!(self.stack.as_mut_ptr_range(), &self.stack_ptr_range);
+
+        self.chunk = Box::pin(chunk);
         self.ip = self.chunk.code.as_ptr();
         self.ip_range = self.chunk.code.as_ptr_range();
+
+        dbg!(self.stack.as_mut_ptr_range(), &self.stack_ptr_range);
 
         self.run()
     }
 
     fn run(&mut self) -> InterpretResult {
         loop {
-            if cfg!(feature = "debug_trace_execution") {
+            #[cfg(feature = "debug_trace_execution")]
+            {
                 print!("          ");
                 let mut ptr = self.stack_ptr_range.start;
                 // SAFETY: We are in range on the stack, because we start from the stack start ptr, and end with the stack_top, which is also in range of the stack
@@ -143,7 +157,9 @@ impl VM {
     }
 
     fn reset_stack(&mut self) {
-        self.stack_top = self.stack_ptr_range.start;
+        self.stack = Box::pin([0.0; STACK_MAX]);
+        self.stack_top = self.stack.as_mut_ptr();
+        self.stack_ptr_range = self.stack.as_mut_ptr_range();
     }
 
     fn push(&mut self, value: Value) {

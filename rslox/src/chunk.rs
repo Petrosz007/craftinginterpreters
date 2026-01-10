@@ -50,7 +50,7 @@ impl TryFrom<u8> for OpCode {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize)]
 pub struct Chunk {
     pub code: Vec<u8>,
     pub lines: Vec<usize>,
@@ -81,7 +81,8 @@ impl Chunk {
             return;
         }
 
-        if self.constants.len() <= 0x00FF_FFFF {
+        const MAX_CONSTANTS: usize = 0x00FF_FFFF;
+        if self.constants.len() <= MAX_CONSTANTS {
             self.constants.push(value);
 
             let idx = self.constants.len() - 1;
@@ -95,7 +96,7 @@ impl Chunk {
 
         panic!(
             "Trying to add more than {} constants to a chunk",
-            0x00FF_FFFF
+            MAX_CONSTANTS
         )
     }
 }

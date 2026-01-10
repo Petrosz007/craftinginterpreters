@@ -12,18 +12,23 @@ pub struct Scanner<'a> {
     line: usize,
 }
 
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Token {
     pub typ: TokenType,
     pub str: String,
     pub line: usize,
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum TokenType {
     // Single-character tokens.
+    /// (
     LeftParen,
+    /// )
     RightParen,
+    /// {
     LeftBrace,
+    /// }
     RightBrace,
     Comma,
     Dot,
@@ -151,7 +156,6 @@ impl Scanner<'_> {
         let c = self.source_iter.next().unwrap();
         self.current_str.push(c);
         self.current += c.len_utf8();
-
         c
     }
 
@@ -193,7 +197,7 @@ impl Scanner<'_> {
         loop {
             let peek = self.source_iter.peek();
             match peek {
-                None => return,
+                None => break,
                 Some('\n') => {
                     self.line += 1;
                     self.advance();
@@ -210,12 +214,15 @@ impl Scanner<'_> {
                         {}
                         continue;
                     } else {
-                        return;
+                        break;
                     }
                 }
-                _ => return,
+                _ => break,
             }
         }
+
+        // All the self.advance()-es accumulated the whitespace in the current_str, we need to clear that
+        self.current_str = String::new();
     }
 
     fn string(&mut self) -> Token {

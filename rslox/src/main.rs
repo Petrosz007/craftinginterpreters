@@ -1,4 +1,8 @@
-use std::{fs, io, process::exit};
+use std::{
+    fs,
+    io::{self, Write},
+    process::exit,
+};
 
 use clap::Parser;
 
@@ -31,19 +35,26 @@ fn main() {
 }
 
 fn repl(vm: VM) {
+    let mut vm = vm;
     let mut line = String::new();
     let stdin = io::stdin();
+    let mut stdout = io::stdout();
 
     loop {
         print!("> ");
+        stdout.flush().unwrap();
+
+        line.clear();
         stdin.read_line(&mut line).unwrap();
+
         println!();
 
-        interpret(&line);
+        interpret(&mut vm, &line);
     }
 }
 
 fn run_file(vm: VM, file_path: &str) -> ! {
+    let mut vm = vm;
     let source = match fs::read_to_string(file_path) {
         Ok(source) => source,
         Err(err) => {
@@ -51,7 +62,7 @@ fn run_file(vm: VM, file_path: &str) -> ! {
             exit(74);
         }
     };
-    let result = interpret(&source);
+    let result = interpret(&mut vm, &source);
 
     match result {
         vm::InterpretResult::Ok => exit(0),
@@ -60,7 +71,6 @@ fn run_file(vm: VM, file_path: &str) -> ! {
     }
 }
 
-fn interpret(source: &str) -> vm::InterpretResult {
-    compiler::compile(source);
-    vm::InterpretResult::Ok
+fn interpret(vm: &mut VM, source: &str) -> vm::InterpretResult {
+    vm.interpret(source)
 }
